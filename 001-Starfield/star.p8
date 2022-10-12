@@ -1,72 +1,77 @@
 pico-8 cartridge // http://www.pico-8.com
 version 38
 __lua__
-star= {
-	x=0,
-	y=0,
-	z=0,
-	pz=z
-}
-speed = 0.25
+speed=0 --a global variable to store  the current speed
 
-function _init()
-	stars={}
-	for i=1,100 do
-		stars[i]=star
+function _init() --run initialization code once before program starts
+	stars={}     -- create a table to hold our stars
+	poke(0x5f2d, 0x1) --Pico-8 function to activate mouse
+
+	for i=1,100 do	  -- load the stars[] table with 100 stars
 		stars[i]=star:new(stars[i])
 	end
 end
 
-function _update60()
+function _update60() --Pico-8 runs this function 60x per second
 	for i=1,#stars do
 		stars[i].update(stars[i])
 	end
+	speed=mapnums(stat(32), -16, 143, 1, 3);
+
 end
 
 function _draw()
 	cls()
 	camera(-64,-64)
+	--speed+=0.001
 	for i=1,#stars do
 		stars[i].show(stars[i])
 	end
+	--print(stat(32) .. ": " .. speed,8)
 end
 -->8
+star= { --creates a gereric star table
+	x=0,
+	y=0,
+	z=0,
+	pz=z
+}
 
-
-function star:new()
- local obj={}
- obj.x=rnd(128)-64
- obj.y=rnd(128)-64
- obj.z=rnd(64)
- -- etc etc more init
- -- set self (star) as prototype so that stars can access methods defined in star
- return setmetatable(obj, {__index=self})
+function star:new() --an instance function that creates a new star object
+ 	local obj={}
+ 	obj.x=rnd(128)-64 --random x between -64 and 64
+ 	obj.y=rnd(128)-64 --random x between -64 and 64
+ 	obj.z=rnd(64)	  --random x between 0 and 64
+ 	return setmetatable(obj, {__index=self}) --metatable causes the return value 'obj' to be treated as an instance of star
 end
 
-function star:update()
-	self.z-=speed
-	if self.z<0 then 
-		self.z=16
-		self.x=rnd(32)-16
-		self.y=rnd(32)-16
-		self.pz=star.z
+function star:update() --an instance function that updates the star object
+	self.z-=speed -- we are reducing the z-value of ech star by 'speed' on each frame
+	if self.z<0 then --reset each star when it reaches 0
+		self.z=64
+		self.x=rnd(128)-64
+		self.y=rnd(128)-64
+		self.pz=self.z
 	end
 end	
 
-function star:show()
-	sx = mapnums(self.x/self.z,0,1,0,64/2)
-	sy = mapnums(self.y/self.z,0,1,0,64/2)
-	r	 = mapnums(self.z,0,64,16,0)
-	--oval(sx,sy,r,r)
+function star:show() --an instance function that displaces a star object
+	sx = mapnums(self.x/self.z,0,1,1,64) 
+	sy = mapnums(self.y/self.z,0,1,1,64)
+	r	 = mapnums(self.z,0,64,3.5,0.5)
 	
-	px=mapnums(self.x/self.z,0,1,0,64)
-	py=mapnums(self.y/self.z,0,1,0,64)
+	
+	px=mapnums(self.x/self.z,0,1,1,64/speed)
+	py=mapnums(self.y/self.z,0,1,1,64/speed)
 	
 	self.pz=self.z
 	
-	line(px,py,sx,sy,10)--]]
+	line(px,py,sx,sy,7)
+	circfill(sx,sy,r,7)
+
 end
 -->8
+--an implementation of the Javascript function map() that maps values from one range onto another range
 function mapnums(value, start1, stop1, start2, stop2, withinbounds)
 	    local range1 = stop1 - start1
 	    local range2 = stop2 - start2
